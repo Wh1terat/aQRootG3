@@ -17,11 +17,8 @@ def cipher(data):
         for j in iArr:
             if j[0] > c or j[1] < c:
                 continue
-            _ = (j[2] if j[2] != -1 else c) + j[3] + data
-            out += chr((0xFF00 & _) >> 8)
-            out += chr(_ & 0xFF)
-        else:
-            out += chr(0xA2 - c)
+            out += (j[2] if j[2] != -1 else c) + j[3] + c
+        out += chr(0xA2 - c)
     return out
 
 
