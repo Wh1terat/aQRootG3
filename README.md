@@ -80,4 +80,6 @@ Tested Versions
 
 | Market | Firmware Version | Status |
 | -------| --------------- | -- |
-| China  | 3.3.2_0003.004  | :white_check_mark: |
+| China | 3.2.7_0019.0004 | :white_check_mark: |
+| China  | 3.3.2_0003.0004  | :white_check_mark: |
+
