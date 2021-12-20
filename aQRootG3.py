@@ -25,7 +25,7 @@ def cipher(data):
 def generate_payload(ssid, pwd, domain="aiot-coap.aqara.cn"):
     """
     Here be dragons
-    nslookup sprintf buffer is [132] (i.e do not exceed 132 on key d)
+    nslookup sprintf buffer is [132] - do not exceed 124 on key d
     """
     payload = {
         "b": f"lumiLZc1dhEfPzMN",
