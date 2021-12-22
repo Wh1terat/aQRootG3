@@ -28,7 +28,7 @@ def generate_payload(ssid, pwd, domain="aiot-coap.aqara.cn"):
     nslookup sprintf buffer is [132] - do not exceed 124 on key d
     """
     payload = {
-        "b": f"lumiLZc1dhEfPzMN",
+        "b": "lumiLZc1dhEfPzMN",
         "d": ";".join(
             [
                 domain,
