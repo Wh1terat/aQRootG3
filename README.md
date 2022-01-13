@@ -8,9 +8,13 @@
 
 Intro
 ---------------
-I was disappointed to see the Aqara G3 camera did not ship with telnet enabled so I managed to grab a copy of a firmware update for some good 'ol static analysis which confirmed none of the previous methods were going to work. Whilst going through  "ha_master" I did see that one of the variables passed in by the setup qrcode is thrown through sprintf as "nslookup %s" and subsequently passed to popen. (yay)
-Getting telnet was fairly trivial, getting persistent telnet in one shot within the 132 char sprintf buffer and on a readonly filesystem was a little more challenging.
-(Aqara have also changed their key ciphering for ssid and pwd)
+I was disappointed to see the Aqara G3 camera did not ship with telnet enabled so I managed to grab a copy of a firmware update for some good 'ol static analysis which confirmed none of the previous methods were going to work.
+
+Whilst going through  "ha_master" I did see that one of the variables passed in by the setup qrcode is thrown through sprintf as "nslookup %s" and subsequently passed to popen (yay).
+
+Getting telnet was fairly trivial, getting persistent telnet in one shot within the 132 char sprintf buffer on a readonly filesystem was a little more challenging.
+
+Thankfully another qrcode variable (b aka bind_key) has a larger buffer so we store some data in this which can later be used by the main payload.
 
 
 Usage
