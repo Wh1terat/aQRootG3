@@ -22,7 +22,7 @@ Usage
 ```bash
 usage: aQRootG3.py [-h] ssid pwd [filename]
 
-aQRootG3 v0.2
+aQRootG3 v0.x
 Enable telnet via qrcode command injection for Aqara G3 hub
 
 positional arguments:
