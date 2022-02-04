@@ -4,13 +4,25 @@ import segno
 
 __title__ = "aQRoot"
 __desc__ = "Enable telnet via qrcode command injection for Aqara G3 hub"
-__version__ = "0.2"
+__version__ = "0.3"
 __author__ = "Gareth Bryan"
 __license__ = "MIT"
 
 
 def cipher(data):
-    return "".join([chr(0xa2 - ord(c)) for c in data])
+    out = ""
+    for c in data.encode():
+        if 32 <= c <= 35:
+            out += '%c%c' % (c, c)
+        elif c <= 126:
+            out += '%c' % (162 - c)
+        elif c <= 128:
+            out += '#%c' % (165 - c)
+        elif c <= 208:
+            out += '!%c' % (164 + c & 0xff)
+        else:
+            out += '"%c' % (83 + c & 0xff)
+    return out
 
 
 def generate_payload(ssid, pwd, payload, post_init):
