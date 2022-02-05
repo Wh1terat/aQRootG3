@@ -1,10 +1,9 @@
 # aQRootG3 #
-### Enable telnet via qrcode command injection for Aqara G3 hub ###
+### Enable telnet access via QRCode command Injection for Aqara G3 ###
 
 <p align="center" width="100%">
-    <img src="https://user-images.githubusercontent.com/1288525/151019724-2d52654c-30ce-4f74-9d76-e26d3095c350.jpg"> 
+    <img src="https://user-images.githubusercontent.com/1288525/152621650-993c5630-c749-4758-9609-e5421df4d7ff.png"> 
 </p>
-
 
 Intro
 ---------------
