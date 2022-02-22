@@ -36,6 +36,12 @@ optional arguments:
 
 Steps
 ---------------
+> :warning:  **NOTE**
+> 
+> *Due to the amount of data in the QRCode, it is no longer possible for the camera to read from a small screen (such as a phone).*\
+> *With default settings the QRCode needs to be displayed at a minimum of ~110x110mm to scan successfully.*
+
+
 1. Reset the camera by pressing the button 10 times quickly.
 2. When prompted (albeit probably in chinese) scan the QR code you've generated
 3. This will give a failed message (due to invalid bind_key)
