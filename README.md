@@ -5,6 +5,14 @@
     <img src="https://user-images.githubusercontent.com/1288525/152621650-993c5630-c749-4758-9609-e5421df4d7ff.png"> 
 </p>
 
+:warning:  **WARNING** :warning:
+---------------
+Aqara have closed the exploit in firmware 3.3.9_0011.0004 by filtering ``` `$'";|&\``` from variables.
+
+It is unlikely that this method of exploitation will ever work again in newer version. It was good while it lasted. 
+
+Aqara - go f*ck yourselves.
+
 Intro
 ---------------
 I was disappointed to see the Aqara G3 camera did not ship with telnet enabled so I managed to grab a copy of a firmware update for some good 'ol static analysis which confirmed none of the previous methods were going to work.
@@ -88,5 +96,6 @@ Tested Versions
 | 3.2.7_0019.0004 | :white_check_mark: |
 | 3.3.2_0003.0004  | :white_check_mark: |
 | 3.3.4_0007.0004  | :white_check_mark: |
+| 3.3.9_0011.0004  | :no_entry_sign: |
 
 
